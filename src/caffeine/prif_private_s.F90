@@ -418,7 +418,7 @@ contains
 
   subroutine unimplemented(proc_name)
     character(len=*), intent(in) ::  proc_name
-    call prif_error_stop(quiet=.false._c_bool, stop_code_char=proc_name // " is not yet implemented")
+    error stop
   end subroutine
 
   pure function optional_value(var) result(c_val)
@@ -441,7 +441,7 @@ contains
 
     call_assert(report_stat /= 0)
     if (.not. present(stat)) then
-      call prif_error_stop(.false._c_bool, stop_code_char=report_msg)
+      error stop
     else
       stat = report_stat
       if (present(errmsg)) then
@@ -484,7 +484,7 @@ contains
       current_team%info%child_heap_info%offset = &
           as_int(current_team%info%child_heap_info%allocated_memory) - current_team%info%heap_start
     end if
-    call prif_co_broadcast(current_team%info%child_heap_info, 1)
+    ! call prif_co_broadcast(current_team%info%child_heap_info, 1)
   end subroutine
 
   logical function caf_have_child_teams()

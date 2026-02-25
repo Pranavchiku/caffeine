@@ -117,15 +117,19 @@ done
 
 set -u # error on use of undefined variable
 
-if [ -z ${FC+x} ] || [ -z ${CC+x} ] || [ -z ${CXX+x} ]; then
+if [ -z ${FC+x} ]; then
   if command -v gfortran-$GCC_VERSION > /dev/null 2>&1; then
     FC=`which gfortran-$GCC_VERSION`
     echo "Setting FC=$FC"
   fi
+fi
+if [ -z ${CC+x} ]; then
   if command -v gcc-$GCC_VERSION > /dev/null 2>&1; then
     CC=`which gcc-$GCC_VERSION`
     echo "Setting CC=$CC"
   fi
+fi
+if [ -z ${CXX+x} ]; then
   if command -v g++-$GCC_VERSION > /dev/null 2>&1; then
     CXX=`which g++-$GCC_VERSION`
     echo "Setting CXX=$CXX"
@@ -272,9 +276,15 @@ EOF
       brew link --force glibc
     fi
   fi
-  CC=`which gcc-$GCC_VERSION`
-  CXX=`which g++-$GCC_VERSION`
-  FC=`which gfortran-$GCC_VERSION`
+  if [ -z ${CC+x} ]; then
+    CC=`which gcc-$GCC_VERSION`
+  fi
+  if [ -z ${CXX+x} ]; then
+    CXX=`which g++-$GCC_VERSION`
+  fi
+  if [ -z ${FC+x} ]; then
+    FC=`which gfortran-$GCC_VERSION`
+  fi
 
   if [ -z ${REALPATH+x} ] || [ -z ${MAKE+x} ] ; then
     ask_permission_to_install_homebrew_package "'realpath' and 'make'" "coreutils"
@@ -453,23 +463,23 @@ if [[ $compiler_version =~ 'flang' ]]; then
 elif [[ $compiler_version =~ 'GNU Fortran' ]]; then
   compiler_flag="-g -O3 -ffree-line-length-0 -Wno-unused-dummy-argument"
 elif [[ $compiler_version =~ 'LFortran' ]]; then
-  compiler_flag="-g -O3 --cpp"
+  compiler_flag="--cpp --no-warnings --no-style-suggestions"
 else # unknown compiler
   compiler_flag="-g -O2"
   echo "WARNING: Failed to detect a recognized Fortran compiler"
 fi
 # enable Assert's multi-image support with PRIF callbacks provided by libcaffeine
-compiler_flag+=" -DASSERT_MULTI_IMAGE -DASSERT_PARALLEL_CALLBACKS"
+compiler_flag+=""
 # enable Julienne's multi-image support with PRIF callbacks provided by julienne-driver
-compiler_flag+=" -DHAVE_MULTI_IMAGE_SUPPORT -DJULIENNE_PARALLEL_CALLBACKS"
+compiler_flag+=""
 
 if ! [[ "$user_compiler_flags " =~ -[DU]ASSERTIONS[=\ ] ]] ; then 
   # default to enabling assertions, unless the command line sets a relevant flag
-  compiler_flag+=" -DASSERTIONS"
+  compiler_flag+=""
 fi
 
 GASNET_CONDUIT_UPPER=$(tr '[:lower:]' '[:upper:]' <<<$GASNET_CONDUIT)
-compiler_flag+=" -DCAF_NETWORK_$GASNET_CONDUIT_UPPER"
+# compiler_flag+=" -DCAF_NETWORK_$GASNET_CONDUIT_UPPER"
 
 # Should come last to allow command-line overrides
 compiler_flag+=" $user_compiler_flags"
