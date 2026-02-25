@@ -393,6 +393,29 @@ GASNET_CC="`$PKG_CONFIG $pkg --variable=GASNET_CC`"
 GASNET_CFLAGS="`$PKG_CONFIG $pkg --variable=GASNET_CFLAGS`"
 GASNET_CPPFLAGS="`$PKG_CONFIG $pkg --variable=GASNET_CPPFLAGS`"
 
+if [[ $FPM_FC == *lfortran* ]]; then
+  # LFortran does not understand GCC-specific flags like --param and -W*
+  filtered_ldflags=""
+  skip_next=false
+  for flag in $GASNET_LDFLAGS; do
+    if $skip_next; then
+      skip_next=false
+      continue
+    fi
+    case "$flag" in
+      --param)
+        skip_next=true
+        ;;
+      --param=*|-W*)
+        ;;
+      *)
+        filtered_ldflags+="${filtered_ldflags:+ }$flag"
+        ;;
+    esac
+  done
+  GASNET_LDFLAGS="$filtered_ldflags"
+fi
+
 # Check whether GASNet was installed using Spack. If yes, bail out.
 # Note: relies on the fact that most Spack installations have "opt/spack"
 #       in the directory path, and assumes that the first directory returned
@@ -463,7 +486,7 @@ if [[ $compiler_version =~ 'flang' ]]; then
 elif [[ $compiler_version =~ 'GNU Fortran' ]]; then
   compiler_flag="-g -O3 -ffree-line-length-0 -Wno-unused-dummy-argument"
 elif [[ $compiler_version =~ 'LFortran' ]]; then
-  compiler_flag="--cpp --no-warnings --no-style-suggestions"
+  compiler_flag="--separate-compilation --cpp --no-warnings --no-style-suggestions"
 else # unknown compiler
   compiler_flag="-g -O2"
   echo "WARNING: Failed to detect a recognized Fortran compiler"
